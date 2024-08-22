@@ -15,7 +15,7 @@ np.random.seed(fix_seed)
 p = psutil.Process()
 p.cpu_affinity(range(40, 80))
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
+os.environ["CUDA_VISIBLE_DEVICES"]="2,3,4,5"
 
 parser = argparse.ArgumentParser(description='TimesNet')
 
@@ -86,7 +86,7 @@ parser.add_argument('--decay_fac', type=float, default=0.75)
 parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')
 parser.add_argument('--gpu', type=int, default=0, help='gpu')
 parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
-parser.add_argument('--local_rank', type=int, default=-1, help='local rank for distributed training')
+parser.add_argument('--local-rank', type=int, default=-1, help='local rank for distributed training')
 
 #parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multile gpus')
 
@@ -135,30 +135,48 @@ def init_distributed():
         rank = int(os.environ['RANK'])
         local_rank = int(os.environ['LOCAL_RANK'])
         
-        dist.init_process_group(backend='nccl')
+        if not dist.is_initialized():
+            dist.init_process_group(backend='nccl')
         torch.cuda.set_device(local_rank)
         
-        return local_rank
+        return local_rank, world_size
     else:
         print('Not using distributed mode')
-        return 0
+        return 0, 1
+    
 
-if args.use_multi_gpu:
-    args.local_rank = init_distributed()
+    
+    
+# args.local_rank = int(os.environ.get('LOCAL_RANK', args.local_rank))
+# if args.use_multi_gpu:
+#     args.local_rank = init_distributed()
+#     print(args.local_rank)
+# else:
+#     args.local_rank = 0
+
+
+# if args.use_gpu and args.use_multi_gpu:
+#     # args.dvices = args.devices.replace(' ', '')
+#     # device_ids = args.devices.split(',')
+#     # args.device_ids = [int(id_) for id_ in device_ids]
+#     # args.gpu = args.device_ids[0]
+#     torch.cuda.set_device(args.local_rank)
+#     torch.distributed.init_process_group(backend='nccl')
+#     args.world_size = torch.distributed.get_world_size()
+# print('Args in experiment:')
+# print(args)
+if args.use_gpu and args.use_multi_gpu:
+        args.local_rank, args.world_size = init_distributed()
 else:
     args.local_rank = 0
+    args.world_size = 1
 
-
-if args.use_gpu and args.use_multi_gpu:
-    # args.dvices = args.devices.replace(' ', '')
-    # device_ids = args.devices.split(',')
-    # args.device_ids = [int(id_) for id_ in device_ids]
-    # args.gpu = args.device_ids[0]
+if args.use_gpu:
     torch.cuda.set_device(args.local_rank)
-    torch.distributed.init_process_group(backend='nccl')
-    args.world_size = torch.distributed.get_world_size()
-print('Args in experiment:')
-print(args)
+
+    print('Args in experiment:')
+    print(args)
+
 
 
 
@@ -206,7 +224,7 @@ if args.is_training:
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
 
         best_model_path = path + '/' + 'checkpoint.pth'
-        base_path = os.path.join("/mnt/storage/personal/eungyeop/ETRI_HANDOVER/experiments", args.exp_info)
+        base_path = os.path.join("/mnt/storage/personal/eungyeop/HERO/experiments", args.exp_info)
         
         exp.model.load_state_dict(torch.load(os.path.join(base_path, f"{args.exp_protocol}", "model_checkpoint.pth")))
         #/mnt/storage/personal/eungyeop/HERO/experiments/TEST/TEST/model_checkpoint.pth

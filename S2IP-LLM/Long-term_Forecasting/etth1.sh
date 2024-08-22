@@ -1,6 +1,6 @@
-OMP_NUM_THREADS=10 python -m torch.distributed.launch --nproc_per_node=4 run.py \
+OMP_NUM_THREADS=10 torchrun --nproc_per_node=4 --master_port=29500 run.py \
   --task_name long_term_forecast \
-  --is_training 1 \
+  --is_training 0 \
   --data_path ETTh1.csv \
   --model_id ETTh1_512_96 \
   --model S2IPLLM \

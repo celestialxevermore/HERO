@@ -31,13 +31,9 @@ class Exp_Long_Term_Forecast(object):
         }
         self.device = self._acquire_device()
         self.model = self._build_model()
-        
-        if args.use_gpu and args.use_multi_gpu:
-            self.model = nn.DataParallel(self.model, device_ids=self.device_ids)
+    
         
         self.model = self.model.to(self.device)
-
-
         self.train_data, self.train_loader = self._get_data(flag='train')
         self.vali_data, self.vali_loader = self._get_data(flag='val')
         # self.test_data, self.test_loader = self._get_data(flag='test')
@@ -61,7 +57,7 @@ class Exp_Long_Term_Forecast(object):
 
         if self.args.use_gpu and self.args.use_multi_gpu:
             model = DDP(model, device_ids=[self.args.local_rank], output_device=self.args.local_rank)
-        
+            
         return model
 
     # def _get_data(self, flag):
@@ -264,7 +260,7 @@ class Exp_Long_Term_Forecast(object):
             base_path = os.path.join("/mnt/storage/personal/eungyeop/HERO/experiments", self.args.exp_info)
             if not os.path.exists(base_path):
                 os.makedirs(base_path)
-
+        
             self.model.load_state_dict(torch.load(os.path.join(base_path, f"{self.args.exp_protocol}", "model_checkpoint.pth")))
         
         
