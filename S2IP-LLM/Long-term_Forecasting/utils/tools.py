@@ -390,7 +390,7 @@ def convert_to_serializable(obj):
 
 def save_experiment_data(args, metrics, preds, trues, exp_info, exp_type):
     # exp_info 폴더 경로
-    exp_info_dir = os.path.join("/mnt/storage/personal/eungyeop/ETRI_HANDOVER/experiments", exp_info)
+    exp_info_dir = os.path.join("/mnt/storage/personal/eungyeop/HERO/experiments", exp_info)
     os.makedirs(exp_info_dir, exist_ok=True)
     
     # exp_protocol 폴더 경로
@@ -413,7 +413,7 @@ def save_experiment_data(args, metrics, preds, trues, exp_info, exp_type):
     setting = {
 
         "data": args.data,
-        "data.preprocessing": args.preprocessing,
+        #"data.preprocessing": args.preprocessing,
         "data.features": args.features,
         "seq_len": args.seq_len,
         "label_len": args.label_len,
@@ -428,13 +428,13 @@ def save_experiment_data(args, metrics, preds, trues, exp_info, exp_type):
         "distill": args.distil,
         "training hyper_parameters": {
             "train_epoch": args.train_epochs,
-            "distance": args.distance, 
-            "use_pos": args.use_pos,
-            "use ReverseIN": args.use_RevIN,
+            #"distance": args.distance, 
+            #"use_pos": args.use_pos,
+            #"use ReverseIN": args.use_RevIN,
             "loss": args.loss,
-            "reg": args.reg,
-            "moving_avg": args.mv_avg,
-            "scale_type": args.scale_type,
+            #"reg": args.reg,
+            "moving_avg": args.moving_avg,
+            #"scale_type": args.scale_type,
         },
         "Experience destination": args.des
     }
@@ -448,16 +448,13 @@ def save_experiment_data(args, metrics, preds, trues, exp_info, exp_type):
     with open(os.path.join(exp_protocol_dir, "meta-setting.json"), 'w') as f:
         json.dump(settings, f, indent=4)
 
-    if args.short_term and args.long_term:
-        model_exp_dir = exp_protocol_dir
-    else:
-        model_exp_dir = os.path.join(exp_protocol_dir, args.model)
+    model_exp_dir = os.path.join(exp_protocol_dir, args.model)
     os.makedirs(model_exp_dir, exist_ok=True)
 
     results = {
         "model_id": args.model_id,
-        "short_term" : args.short_term_model,
-        "long_term" : args.long_term_model,
+        #"short_term" : args.short_term_model,
+        #"long_term" : args.long_term_model,
         "metrics": metrics
 
     }

@@ -1,7 +1,7 @@
 import argparse
 import os
 import torch
-
+import torch.distributed as dist
 from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
 import random
 import numpy as np
@@ -15,11 +15,7 @@ np.random.seed(fix_seed)
 p = psutil.Process()
 p.cpu_affinity(range(40, 80))
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
-
-
-
-
+os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
 
 parser = argparse.ArgumentParser(description='TimesNet')
 
@@ -35,14 +31,14 @@ parser.add_argument('--model', type=str, required=True, default='Autoformer',
 parser.add_argument('--data', type=str, required=True, default='ETTh1', help='dataset type')
 parser.add_argument('--number_variable', type=int,default=7, help='number of variable')
 
-parser.add_argument('--root_path', type=str, default='/mnt/storage/projects/etri-hand-over/', help='root path of the data file')
-parser.add_argument('--data_path', type=str, default='UE', help='data file')
+parser.add_argument('--root_path', type=str, default='/mnt/storage/personal/eungyeop/informer/ETDataset/dataset', help='root path of the data file')
+parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')
 parser.add_argument('--features', type=str, default='M',
                     help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
 parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
 parser.add_argument('--freq', type=str, default='h',
                     help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
-parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
+parser.add_argument('--checkpoints', type=str, default='/mnt/storage/personal/eungyeop/ETRI_HANDOVER/checkpoints/', help='location of model checkpoints')
 
 # forecasting task
 parser.add_argument('--seq_len', type=int, default=96, help='input sequence length')
@@ -88,8 +84,10 @@ parser.add_argument('--decay_fac', type=float, default=0.75)
 
 # GPU
 parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')
-parser.add_argument('--gpu', type=int, default=3, help='gpu')
+parser.add_argument('--gpu', type=int, default=0, help='gpu')
 parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
+parser.add_argument('--local_rank', type=int, default=-1, help='local rank for distributed training')
+
 #parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multile gpus')
 
 
@@ -128,20 +126,37 @@ parser.add_argument('--exp_protocol', type = str, required= True, default= "YOU 
     
 
 
-
-
-
-
-
 args = parser.parse_args()
 args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
 
-if args.use_gpu and args.use_multi_gpu:
-    args.dvices = args.devices.replace(' ', '')
-    device_ids = args.devices.split(',')
-    args.device_ids = [int(id_) for id_ in device_ids]
-    args.gpu = args.device_ids[0]
+def init_distributed():
+    if 'WORLD_SIZE' in os.environ:
+        world_size = int(os.environ['WORLD_SIZE'])
+        rank = int(os.environ['RANK'])
+        local_rank = int(os.environ['LOCAL_RANK'])
+        
+        dist.init_process_group(backend='nccl')
+        torch.cuda.set_device(local_rank)
+        
+        return local_rank
+    else:
+        print('Not using distributed mode')
+        return 0
 
+if args.use_multi_gpu:
+    args.local_rank = init_distributed()
+else:
+    args.local_rank = 0
+
+
+if args.use_gpu and args.use_multi_gpu:
+    # args.dvices = args.devices.replace(' ', '')
+    # device_ids = args.devices.split(',')
+    # args.device_ids = [int(id_) for id_ in device_ids]
+    # args.gpu = args.device_ids[0]
+    torch.cuda.set_device(args.local_rank)
+    torch.distributed.init_process_group(backend='nccl')
+    args.world_size = torch.distributed.get_world_size()
 print('Args in experiment:')
 print(args)
 
@@ -182,9 +197,6 @@ if args.is_training:
         path = os.path.join(args.checkpoints, setting)
         if not os.path.exists(path):
             os.makedirs(path)
-        
-      
-
 
         exp = Exp(args)  # set experiments
        
@@ -194,8 +206,10 @@ if args.is_training:
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
 
         best_model_path = path + '/' + 'checkpoint.pth'
-        exp.model.load_state_dict(torch.load(best_model_path))
-       
+        base_path = os.path.join("/mnt/storage/personal/eungyeop/ETRI_HANDOVER/experiments", args.exp_info)
+        
+        exp.model.load_state_dict(torch.load(os.path.join(base_path, f"{args.exp_protocol}", "model_checkpoint.pth")))
+        #/mnt/storage/personal/eungyeop/HERO/experiments/TEST/TEST/model_checkpoint.pth
         if args.task_name == 'long_term_forecast':
             mse, mae = exp.test(setting)
             mses.append(mse)
@@ -231,5 +245,5 @@ else:
  
     exp = Exp(args)  # set experiments
     print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-    # exp.test(setting, test=1)
+    exp.test(setting, test=1)
     torch.cuda.empty_cache()

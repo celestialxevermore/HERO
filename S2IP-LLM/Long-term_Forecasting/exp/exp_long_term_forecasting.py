@@ -18,7 +18,7 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt 
 from tqdm import tqdm
-
+from torch.nn.parallel import DistributedDataParallel as DDP
 warnings.filterwarnings('ignore')
 
 
@@ -29,10 +29,15 @@ class Exp_Long_Term_Forecast(object):
             'S2IPLLM': S2IPLLM,
             
         }
-
-        self.device = torch.device('cuda:3')
+        self.device = self._acquire_device()
         self.model = self._build_model()
         
+        if args.use_gpu and args.use_multi_gpu:
+            self.model = nn.DataParallel(self.model, device_ids=self.device_ids)
+        
+        self.model = self.model.to(self.device)
+
+
         self.train_data, self.train_loader = self._get_data(flag='train')
         self.vali_data, self.vali_loader = self._get_data(flag='val')
         # self.test_data, self.test_loader = self._get_data(flag='test')
@@ -40,14 +45,42 @@ class Exp_Long_Term_Forecast(object):
         self.optimizer = self._select_optimizer()
         self.criterion = self._select_criterion()
 
+    def _acquire_device(self):
+        if self.args.use_gpu:
+            if self.args.use_multi_gpu:
+                device = torch.device(f'cuda:{self.args.local_rank}')
+            else:
+                device = torch.device('cuda:0')
+        else:
+            device = torch.device('cpu')
+        return device
       
 
     def _build_model(self):
         model = self.model_dict[self.args.model].Model(self.args).to(self.device)
+
+        if self.args.use_gpu and self.args.use_multi_gpu:
+            model = DDP(model, device_ids=[self.args.local_rank], output_device=self.args.local_rank)
+        
         return model
+
+    # def _get_data(self, flag):
+    #     data_set, data_loader = data_provider(self.args, flag)
+    #     return data_set, data_loader
 
     def _get_data(self, flag):
         data_set, data_loader = data_provider(self.args, flag)
+        
+        if self.args.use_multi_gpu:
+            sampler = torch.utils.data.distributed.DistributedSampler(data_set)
+            data_loader = torch.utils.data.DataLoader(
+                data_set,
+                batch_size=self.args.batch_size,
+                sampler=sampler,
+                num_workers=self.args.num_workers,
+                drop_last=True
+            )
+        
         return data_set, data_loader
 
     def _select_optimizer(self):
@@ -228,7 +261,7 @@ class Exp_Long_Term_Forecast(object):
         
         if test:
             print('loading model')
-            base_path = os.path.join("/mnt/storage/personal/eungyeop/ETRI_HANDOVER/experiments", self.args.exp_info)
+            base_path = os.path.join("/mnt/storage/personal/eungyeop/HERO/experiments", self.args.exp_info)
             if not os.path.exists(base_path):
                 os.makedirs(base_path)
 
@@ -295,11 +328,12 @@ class Exp_Long_Term_Forecast(object):
 
                 preds.append(pred)
                 trues.append(true)
-                if i % 20 == 0:
+                if i % 100 == 0:
                     input = batch_x.float().detach().cpu().numpy()
                     gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
                     pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                    visual(gt, pd, os.path.join(model_path, str(i) + f"visual_{self.args.model}.pdf"))
+                    #visual_path = os.path.join(base_path, self.args.exp_info, self.args.model)
+                    #visual(gt, pd, os.path.join(visual_path, str(i) + f"visual_{self.args.model}.pdf"))
 
         test_duration = time.time() - test_start
         print("Test duration: {}".format((format_time(test_duration))))

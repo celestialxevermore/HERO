@@ -1,4 +1,4 @@
-from data_provider.data_loader import Dataset_ETT_hour,Dataset_ETT_hour_decomposed, Dataset_ETT_minute,Dataset_ETT_minute_decomposed,Dataset_Custom
+from data_provider.data_loader import Dataset_ETT_hour,Dataset_ETT_hour_decomposed, Dataset_ETT_minute,Dataset_ETT_minute_decomposed,Dataset_Custom, Dataset_ETT_hour_toy
 
 
 
@@ -15,7 +15,8 @@ data_dict = {
     'ETTm2_decomposed': Dataset_ETT_minute_decomposed,
     'ECL': Dataset_Custom,
     'traffic': Dataset_Custom,
-    'weather': Dataset_Custom
+    'weather': Dataset_Custom,
+    'ETTh1_toy':Dataset_ETT_hour_toy
    
 }
 
@@ -85,8 +86,18 @@ def data_provider(args, flag):
             seasonal_patterns=args.seasonal_patterns,
             percent=percent
         )
+        # print(f"Data set created for {flag}")
+        # print(f"Data set type: {type(data_set)}")
+        # print(f"Data set attributes: {dir(data_set)}")
+        # try:
+        #     length = len(data_set)
+        #     #print(f"{flag} dataset length: {length}")
+        # except Exception as e:
+        #     print(f"Error getting length of {flag} dataset: {e}")
         # batch_size = args.batch_size
+        #a = input(f"flag {flag} len(data_set) : {len(data_set)}")
         print(flag, len(data_set))
+
         data_loader = DataLoader(
             data_set,
             batch_size=batch_size,
