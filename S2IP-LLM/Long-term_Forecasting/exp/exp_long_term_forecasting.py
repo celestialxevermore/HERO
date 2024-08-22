@@ -260,17 +260,20 @@ class Exp_Long_Term_Forecast(object):
             base_path = os.path.join("/mnt/storage/personal/eungyeop/HERO/experiments", self.args.exp_info)
             if not os.path.exists(base_path):
                 os.makedirs(base_path)
-        
-            self.model.load_state_dict(torch.load(os.path.join(base_path, f"{self.args.exp_protocol}", "model_checkpoint.pth")))
-        
-        
-        
-        model_path = os.path.join(base_path, f"{self.args.exp_protocol}")
+            
+            checkpoint_path = os.path.join(base_path, f"{self.args.exp_protocol}", "model_checkpoint.pth")
+            state_dict = torch.load(checkpoint_path)
+
+            if self.args.use_multi_gpu:
+                new_state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+                if isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
+                    self.model.module.load_state_dict(new_state_dict)
+                else:
+                    self.model.load_state_dict(new_state_dict)
+            else:
+                self.model.load_state_dict(state_dict)
         preds = []
         trues = []
-        # folder_path = './test_results/' + setting + '/'
-        # if not os.path.exists(folder_path):
-        #     os.makedirs(folder_path)
         
         sim_matrix = []
         input_embedding = []
