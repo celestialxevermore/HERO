@@ -232,11 +232,11 @@ class Exp_Long_Term_Forecast(object):
             if not os.path.exists(base_path):
                 os.makedirs(base_path)
 
-            self.model.load_state_dict(torch.load(os.path.join(base_path, f"{self.args.exp_protocol}", f"exp3 : {self.args.model}", "model_checkpoint.pth")))
+            self.model.load_state_dict(torch.load(os.path.join(base_path, f"{self.args.exp_protocol}", "model_checkpoint.pth")))
         
         
         
-        model_path = os.path.join(base_path, f"{self.args.exp_protocol}", f"exp3 : {self.args.model}")
+        model_path = os.path.join(base_path, f"{self.args.exp_protocol}")
         preds = []
         trues = []
         # folder_path = './test_results/' + setting + '/'

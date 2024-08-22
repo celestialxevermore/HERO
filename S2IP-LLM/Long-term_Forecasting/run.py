@@ -122,7 +122,10 @@ parser.add_argument('--prompt_init', type=str, default='text_prototype', help='p
 parser.add_argument('--trend_length', type=int, default=24, help='trend_length')
 parser.add_argument('--seasonal_length', type=int, default=96, help='seasonal_length')
 
-
+# custom 
+parser.add_argument('--exp_info', type = str, required= True, default= "YOU SHOULD INPUT YOUR EXPERIMENTAL INFORMATION. CHECK YOUR RESULT JSON FILE CAREFULLY", help = 'Experimental detail')
+parser.add_argument('--exp_protocol', type = str, required= True, default= "YOU SHOULD INPUT YOUR EXPERIMENTAL SCENARIO. CHECK YOUR RESULT JSON FILE CAREFULLY", help = 'Experimental detail')
+    
 
 
 
