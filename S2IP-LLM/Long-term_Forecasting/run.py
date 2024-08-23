@@ -15,8 +15,6 @@ fix_seed = 2021
 random.seed(fix_seed)
 torch.manual_seed(fix_seed)
 np.random.seed(fix_seed)
-
-
 p = psutil.Process()
 p.cpu_affinity(range(40, 80))
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
