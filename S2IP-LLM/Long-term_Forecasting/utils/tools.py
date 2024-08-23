@@ -397,6 +397,7 @@ def save_experiment_data(args, metrics, preds, trues, exp_info, exp_type):
     exp_protocol_dir = os.path.join(exp_info_dir, exp_type)
     os.makedirs(exp_protocol_dir, exist_ok=True)
 
+
     common_params = {
         "batch_size": args.batch_size,
         "train_epochs": args.train_epochs,
@@ -445,12 +446,13 @@ def save_experiment_data(args, metrics, preds, trues, exp_info, exp_type):
         "model_specific_params": model_specific_params
     }
 
-    with open(os.path.join(exp_protocol_dir, "meta-setting.json"), 'w') as f:
-        json.dump(settings, f, indent=4)
+
 
     model_exp_dir = os.path.join(exp_protocol_dir, args.model)
     os.makedirs(model_exp_dir, exist_ok=True)
 
+    with open(os.path.join(model_exp_dir, "meta-setting.json"), 'w') as f:
+        json.dump(settings, f, indent=4)
     results = {
         "model_id": args.model_id,
         #"short_term" : args.short_term_model,
