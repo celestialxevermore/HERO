@@ -2,11 +2,14 @@ import argparse
 import os
 import torch
 import torch.distributed as dist
-from accelerate import Accelerator, DeepSpeedPlugin
-from accelerate import DistributedDataParallelKwargs
+# from accelerate import Accelerator, DeepSpeedPlugin
+# from accelerate import DistributedDataParallelKwargs
 from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
 import random
 import numpy as np
+torch.distributed.init_process_group(backend="nccl")
+
+
 import psutil
 fix_seed = 2021
 random.seed(fix_seed)
@@ -33,7 +36,7 @@ parser.add_argument('--model', type=str, required=True, default='Autoformer',
 parser.add_argument('--data', type=str, required=True, default='ETTh1', help='dataset type')
 parser.add_argument('--number_variable', type=int,default=7, help='number of variable')
 
-parser.add_argument('--root_path', type=str, default='/mnt/storage/personal/eungyeop/informer/ETDataset/dataset', help='root path of the data file')
+parser.add_argument('--root_path', type=str, default='/mnt/storage/personal/eungyeop/HERO/ETDataset/dataset', help='root path of the data file')
 parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')
 parser.add_argument('--features', type=str, default='M',
                     help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
@@ -153,9 +156,9 @@ else:
     args.local_rank = 0
     args.world_size = 1
 
-if args.is_training == 0:
-    args.use_multi_gpu = False
-    args.local_rank = 0
+# if args.is_training == 0:
+#     args.use_multi_gpu = False
+#     args.local_rank = 0
 
 
 if args.use_gpu:

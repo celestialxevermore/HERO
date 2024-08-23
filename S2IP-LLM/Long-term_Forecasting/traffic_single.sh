@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node=4 --master_port=29500 run.py \
+CUDA_VISIBLE_DEVICES=0 torchrun --nproc_per_node=1 --master_port=29505 run.py \
     --task_name long_term_forecast \
     --is_training 1 \
     --data_path traffic.csv \
@@ -25,13 +25,12 @@ CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node=4 --master_port=29500 run
     --trend_length 24 \
     --seasonal_length 4 \
     --train_epochs 1 \
-    --exp_info "traffic_experiments(20240822)" \
-    --exp_protocol "Multi_traffic_512_96" \
-    --use_multi_gpu
+    --exp_info "traffic_experiments(20240823)" \
+    --exp_protocol "Single_traffic_512_96" 
 
 
 
-CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node=4 --master_port=29500 run.py \
+CUDA_VISIBLE_DEVICES=0 torchrun --nproc_per_node=1 --master_port=29505 run.py \
     --task_name long_term_forecast \
     --is_training 1 \
     --data_path traffic.csv \
@@ -58,12 +57,11 @@ CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node=4 --master_port=29500 run
     --trend_length 24 \
     --seasonal_length 12 \
     --train_epochs 1 \
-    --exp_info "traffic_experiments(20240822)" \
-    --exp_protocol "Multi_traffic_512_192" \
-    --use_multi_gpu
+    --exp_info "traffic_experiments(20240823)" \
+    --exp_protocol "Single_traffic_512_192" 
 
 
-CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node=4 --master_port=29500 run.py \
+CUDA_VISIBLE_DEVICES=0 torchrun --nproc_per_node=1 --master_port=29505 run.py \
     --task_name long_term_forecast \
     --is_training 1 \
     --data_path traffic.csv \
@@ -90,13 +88,12 @@ CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node=4 --master_port=29500 run
     --trend_length 24 \
     --seasonal_length 4 \
     --train_epochs 1 \
-    --exp_info "traffic_experiments(20240822)" \
-    --exp_protocol "Multi_traffic_512_336" \
-    --use_multi_gpu
+    --exp_info "traffic_experiments(20240823)" \
+    --exp_protocol "Single_traffic_512_336" 
 
 
 
-CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node=4 --master_port=29500 run.py \
+CUDA_VISIBLE_DEVICES=0 torchrun --nproc_per_node=1 --master_port=29505 run.py \
     --task_name long_term_forecast \
     --is_training 1 \
     --data_path traffic.csv \
@@ -123,6 +120,5 @@ CUDA_VISIBLE_DEVICES=2,3,4,5 torchrun --nproc_per_node=4 --master_port=29500 run
     --trend_length 24 \
     --seasonal_length 12 \
     --train_epochs 1 \
-    --exp_info "traffic_experiments(20240822)" \
-    --exp_protocol "Multi_traffic_512_720" \
-    --use_multi_gpu
+    --exp_info "traffic_experiments(20240823)" \
+    --exp_protocol "Single_traffic_512_720" 

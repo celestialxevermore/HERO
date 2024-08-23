@@ -19,7 +19,7 @@ import psutil
 p = psutil.Process()
 p.cpu_affinity(range(50, 80))
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
+os.environ["CUDA_VISIBLE_DEVICES"]="2,3,4,5"
 
 os.environ['CURL_CA_BUNDLE'] = ''
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:64"
@@ -42,10 +42,10 @@ parser.add_argument('--model_comment', type=str, required=True, default='none', 
 parser.add_argument('--model', type=str, required=True, default='Autoformer',
                     help='model name, options: [Autoformer, DLinear]')
 parser.add_argument('--seed', type=int, default=2021, help='random seed')
-
+parser.add_argument('--llm_model', type = str, default = 'GPT2')
 # data loader
 parser.add_argument('--data', type=str, required=True, default='ETTm1', help='dataset type')
-parser.add_argument('--root_path', type=str, default='./dataset', help='root path of the data file')
+parser.add_argument('--root_path', type=str, default='/mnt/storage/personal/eungyeop/HERO/ETDataset/dataset', help='root path of the data file')
 parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')
 parser.add_argument('--features', type=str, default='M',
                     help='forecasting task, options:[M, S, MS]; '
@@ -105,7 +105,7 @@ parser.add_argument('--percent', type=int, default=100)
 args = parser.parse_args()
 
 ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
-deepspeed_plugin = DeepSpeedPlugin(hf_ds_config='/home/eungyeop/LLM/Time-LLM/ds_config_zero2.json')
+deepspeed_plugin = DeepSpeedPlugin(hf_ds_config='/home/eungyeop/LLM/HERO/Time-LLM/ds_config_zero2.json')
 accelerator = Accelerator(kwargs_handlers=[ddp_kwargs], deepspeed_plugin=deepspeed_plugin)
 
 for ii in range(args.itr):
