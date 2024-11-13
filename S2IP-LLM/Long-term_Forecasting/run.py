@@ -7,6 +7,7 @@ import torch.distributed as dist
 from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
 import random
 import numpy as np
+from torch.nn.parallel import DistributedDataParallel as DDP
 torch.distributed.init_process_group(backend="nccl")
 
 
@@ -15,6 +16,7 @@ fix_seed = 2021
 random.seed(fix_seed)
 torch.manual_seed(fix_seed)
 np.random.seed(fix_seed)
+
 p = psutil.Process()
 p.cpu_affinity(range(40, 80))
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
@@ -138,8 +140,8 @@ def init_distributed():
         rank = int(os.environ['RANK'])
         local_rank = int(os.environ['LOCAL_RANK'])
         
-        if not dist.is_initialized():
-            dist.init_process_group(backend='nccl')
+
+        #dist.init_process_group(backend='nccl')
         torch.cuda.set_device(local_rank)
         
         return local_rank, world_size
@@ -222,7 +224,9 @@ if args.is_training:
             os.makedirs(path)
 
         exp = Exp(args)  # set experiments
-       
+        # if args.use_multi_gpu:
+        #     exp.model = DDP(exp.model, device_ids=[args.local_rank], output_device=args.local_rank, find_unused_parameters=True)
+        
         print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
         exp.train(setting)
 

@@ -19,6 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from tqdm import tqdm
 from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.distributed as dist
 warnings.filterwarnings('ignore')
 
 
@@ -27,7 +28,6 @@ class Exp_Long_Term_Forecast(object):
         self.args = args
         self.model_dict = {
             'S2IPLLM': S2IPLLM,
-            
         }
         self.device = self._acquire_device()
         self.model = self._build_model()
@@ -71,9 +71,10 @@ class Exp_Long_Term_Forecast(object):
             sampler = torch.utils.data.distributed.DistributedSampler(data_set)
             data_loader = torch.utils.data.DataLoader(
                 data_set,
-                batch_size=self.args.batch_size,
+                batch_size=self.args.batch_size // self.args.world_size,
                 sampler=sampler,
                 num_workers=self.args.num_workers,
+                pin_memory = True,
                 drop_last=True
             )
         
@@ -145,9 +146,6 @@ class Exp_Long_Term_Forecast(object):
 
         train_steps = len(self.train_loader)
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
-
-        model_optim = self._select_optimizer()
-        criterion = self._select_criterion()
 
         if self.args.use_amp:
             scaler = torch.cuda.amp.GradScaler()
@@ -229,7 +227,21 @@ class Exp_Long_Term_Forecast(object):
             train_loss = np.average(train_loss)
             sim_loss = np.average(simlarity_losses)
             vali_loss = self.vali(self.vali_data, self.vali_loader, self.criterion)
-    
+
+            if self.args.use_multi_gpu:
+                train_loss = torch.tensor(train_loss).to(self.device)
+                vali_loss = torch.tensor(vali_loss).to(self.device)
+                
+                dist.all_reduce(train_loss)
+                dist.all_reduce(vali_loss)
+                
+                train_loss = train_loss.item() / self.args.world_size
+                vali_loss = vali_loss.item() / self.args.world_size
+                
+
+
+
+
 
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Sim Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss,sim_loss))
@@ -239,10 +251,14 @@ class Exp_Long_Term_Forecast(object):
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
+            if self.args.use_multi_gpu:
+                dist.barrier()
 
             adjust_learning_rate(self.optimizer, epoch + 1, self.args)
             adjust_model(self.model, epoch + 1,self.args)
         
+        if self.args.use_multi_gpu:
+            dist.barrier()
         train_duration = time.time() - train_start 
         print(f"Total training time: {format_time(train_duration)}")
         model_path = os.path.join(base_path, f"{self.args.exp_protocol}")
@@ -347,14 +363,33 @@ class Exp_Long_Term_Forecast(object):
         print('test shape:', preds.shape, trues.shape)
         mae, mse, rmse, mape, mspe = metric(preds, trues)
 
+        if self.args.use_multi_gpu:
+            mae = torch.tensor(mae).to(self.device)
+            mse = torch.tensor(mse).to(self.device)
+            rmse = torch.tensor(rmse).to(self.device)
+            mape = torch.tensor(mape).to(self.device)
+            mspe = torch.tensor(mspe).to(self.device)
 
-        metrics = {}
-        metrics['mae'] = mae 
-        metrics['mse'] = mse
-        metrics['rmse'] = rmse
-        metrics['mape'] = mape
-        metrics['mspe'] = mspe
-        
+            dist.all_reduce(mae, op=dist.ReduceOp.SUM)
+            dist.all_reduce(mse, op=dist.ReduceOp.SUM)
+            dist.all_reduce(rmse, op=dist.ReduceOp.SUM)
+            dist.all_reduce(mape, op=dist.ReduceOp.SUM)
+            dist.all_reduce(mspe, op=dist.ReduceOp.SUM)
+
+            mae = mae.item() / self.args.world_size
+            mse = mse.item() / self.args.world_size
+            rmse = rmse.item() / self.args.world_size
+            mape = mape.item() / self.args.world_size
+            mspe = mspe.item() / self.args.world_size
+            metrics = {}
+            metrics['mse'] = mse
+            metrics['mae'] = mae 
+            metrics['rmse'] = rmse
+            metrics['mape'] = mape
+            metrics['mspe'] = mspe
+
+        if self.args.use_multi_gpu:
+            dist.barrier()
         save_experiment_data(self.args, metrics, preds, trues, self.args.exp_info, self.args.exp_protocol)
         return
     

@@ -453,11 +453,19 @@ def save_experiment_data(args, metrics, preds, trues, exp_info, exp_type):
 
     with open(os.path.join(model_exp_dir, "meta-setting.json"), 'w') as f:
         json.dump(settings, f, indent=4)
+    
+    hyper_parameters = {}
+    hyper_parameters['prompt_lenth'] = args.prompt_length
+    hyper_parameters['sim_coef'] = args.sim_coef
+    hyper_parameters['Semantic_Space'] = args.pool_size 
+    hyper_parameters['trend_length'] = args.trend_length
+    hyper_parameters['seasonal_length'] = args.seasonal_length
     results = {
         "model_id": args.model_id,
         #"short_term" : args.short_term_model,
         #"long_term" : args.long_term_model,
-        "metrics": metrics
+        "metrics": metrics,
+        "hyperparameters" : hyper_parameters
 
     }
 
